@@ -12,9 +12,10 @@ alert.html
 old_books.html
 test.html
 login.html
+test.json
 
 # Libraries
-lib/
+*/lib/*
 
 # Old Custom Rendering Engine
 engine/
