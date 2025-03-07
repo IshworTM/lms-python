@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Contact Us{% endblock %}
+
+{% block content %}
+<div class="container my-5 bg-white p-4 rounded shadow">
+    <h1 class="display-4 fw-bold text-center">Contact Us</h1>
+    <p class="lead text-center">Whether you have questions, feedback, or just want to chat
+        about our LMS project, drop us a DM. We'd love to hear from you!</p>
+
+    <div class="row my-4">
+        <div class="col-md-6">
+            <h3>Get in Touch</h3>
+            <p>
+                <strong>Email:</strong> <a href="mailto:contactlms@gmail.com">contactlms@gmail.com</a><br>
+                <strong>Phone:</strong> +977 (986) 083-7557 <br>
+                <strong>Address:</strong> 123 Library Lane, Knowledge City, Country
+            </p>
+            <p>Follow us on social media for the latest updates!</p>
+            <div>
+                <a href="https://twitter.com/" target="_blank" class="me-2"><i class="fab fa-twitter fa-2x"></i></a>
+                <a href="https://facebook.com/" target="_blank" class="me-2"><i class="fab fa-facebook fa-2x"></i></a>
+                <a href="https://instagram.com/" target="_blank" class="me-2"><i class="fab fa-instagram fa-2x"></i></a>
+                <a href="https://www.linkedin.com/in/ishguitar/" target="_blank"><i
+                        class="fab fa-linkedin fa-2x"></i></a>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <h3>Send Us a Message</h3>
+            <form action="/send_message" method="POST">
+                <div class="mb-3">
+                    <label for="contactName" class="form-label">Your Name</label>
+                    <input type="text" class="form-control" id="contactName" name="contactName"
+                        placeholder="Enter your name" required>
+                </div>
+                <div class="mb-3">
+                    <label for="contactEmail" class="form-label">Your Email</label>
+                    <input type="email" class="form-control" id="contactEmail" name="contactEmail"
+                        placeholder="name@example.com" required>
+                </div>
+                <div class="mb-3">
+                    <label for="contactMessage" class="form-label">Message</label>
+                    <textarea class="form-control" id="contactMessage" name="contactMessage" rows="5"
+                        placeholder="Your message here..." required></textarea>
+                </div>
+                <button type="submit" class="btn btn-success">Send Message</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
