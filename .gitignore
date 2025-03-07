@@ -7,6 +7,18 @@ venv_lms/
 /.venv
 /.pytest_cache
 
+# Test Templates
+alert.html
+old_books.html
+test.html
+login.html
+
+# Libraries
+lib/
+
+# Old Custom Rendering Engine
+engine/
+
 # C extensions
 *.so
 
