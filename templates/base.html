@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Default Title{% endblock %} | Page Portal</title>
+    <link rel="icon" href="static/img/favicon.ico" type="image/x-icon">
+    <link href="/static/lib/bootstrap_min.css" rel="stylesheet">
+    <link href="/static/lib/bootstrap_icons_min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/lib/font_awesome_all_min.css">
+    <script src="/static/js/script.js"></script>
+</head>
+
+<body class="d-flex flex-column min-vh-100">
+    <header>
+        <nav>
+            <div class="navbar bg-warning-subtle fw-bold justify-content-center">
+                <a class="navbar-brand" href="/">
+                    <img src="/static/img/logo.png" width="30" height="30" class="d-inline-block align-top"
+                        alt="Lms Logo">
+                    Page Portal (LMS)
+                </a>
+                <ul class="nav">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/library">Library</a>
+                    </li>
+                    {%if member["role"] == "admin"%}
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#addBookModal">Add a
+                            Book</a>
+                    </li>
+                    {%endif%}
+                    <li class="nav-item">
+                        <!-- <a class="text-decoration-none" href="/loans"> -->
+                        <button class="nav-link" type="button" onclick="viewLoans()">Loans</button>
+                        <!-- </a> -->
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/about_us">About Us</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/contact_us">Contact Us</a>
+                    </li>
+                    {%if member%}
+                    <li class="nav-item dropdown">
+                        <span class="btn dropdown-toggle" id="profileDropdown" data-bs-toggle="dropdown"
+                            aria-haspopup="true">
+                            <i class="fa fa-user-gear" aria-hidden="true"></i>
+                            <span>{{member.username}}</span>
+                        </span>
+                        <div class="dropdown-menu" aria-labelledby="profileDropdown">
+                            <span class="dropdown-header">Main</span>
+                            <a class="dropdown-item" href="/profile">Profile</a>
+                            <!-- <a class="dropdown-item" href="#">Settings</a> -->
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item" href="#" data-bs-toggle="modal"
+                                data-bs-target="#logOutModal">Logout</a>
+                        </div>
+                    </li>
+                    {%else%}
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#loginModal">Login</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#signUpModal">Sign Up</a>
+                    </li>
+                    {%endif%}
+                </ul>
+            </div>
+        </nav>
+        <div class="modal fade" id="addBookModal" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Add New Book</h4>
+                        <button type="button" class="btn btn-light" data-dismiss="modal" data-bs-toggle="modal"
+                            aria-label="Close">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="add-book-form" action="/add_book" method="post">
+                            <div class="mb-3">
+                                <input type="text" class="form-control" name="book_name" id="book-name"
+                                    placeholder="Name" required>
+                            </div>
+                            <div class="mb-3">
+                                <input type="text" class="form-control" name="author" id="author" placeholder="Author"
+                                    required>
+                            </div>
+                            <div class="mb-3">
+                                <input type="text" class="form-control" name="isbn" id="isbn" placeholder="ISBN"
+                                    required>
+
+                            </div>
+                            <div class="mb-3">
+                                <input type="number" class="form-control" name="total_copies" id="total-copies"
+                                    placeholder="Total Copies" required>
+                            </div>
+                            <div class="mb-3">
+                                <input type="number" class="form-control" name="available_copies" id="available-copies"
+                                    placeholder="Available Copies" required>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary" form="add-book-form">Add</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal"
+                            data-bs-toggle="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade" id="loginModal" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Login To Your Account</h4>
+                        <button type="button" class="btn btn-light" data-dismiss="modal" data-bs-toggle="modal"
+                            aria-label="Close">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="login-form" action="/login" method="post">
+                            <div class="input-group mb-3">
+                                <input type="email" class="form-control" name="email" id="email" placeholder="Email"
+                                    required>
+                                <span class="input-group-text" id="email-addon">@example.com</span>
+                            </div>
+                            <div class="input-group mb-3">
+                                <input type="password" class="form-control" name="password" id="password-field"
+                                    placeholder="Password" required>
+                                <span class="input-group-text" role="button" onclick="showPw(event)"
+                                    id="password-addon">
+                                    <i class="cursor-pointer fas fa-eye-slash" id="icon" aria-hidden="true"></i>
+                                </span>
+                            </div>
+                        </form>
+                        <a class="text-decoration-none link-primary" href="#" data-bs-toggle="modal"
+                            data-bs-target="#signUpModal">New around here? Register Now!</a>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary" form="login-form">Login</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal"
+                            data-bs-toggle="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="signUpModal" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Register Account</h4>
+                        <button type="button" class="btn btn-light" data-dismiss="modal" data-bs-toggle="modal"
+                            aria-label="Close">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="signup-form" action="/signup" method="post">
+                            <div class="input-group mb-3">
+                                <span class="input-group-text" id="signin-username-addon">@</span>
+                                <input type="text" class="form-control" name="username" id="username"
+                                    placeholder="Username" required>
+                            </div>
+                            <div class="input-group mb-3">
+                                <input type="email" class="form-control" name="email" id="email" placeholder="Email"
+                                    required>
+                                <span class="input-group-text" id="signup-email-addon">@example.com</span>
+                            </div>
+                            <div class="input-group mb-3">
+                                <input type="password" class="form-control" name="password" id="password-field"
+                                    placeholder="Password" required>
+                                <span class="input-group-text" role="button" onclick="showPw(event)"
+                                    id="password-addon">
+                                    <i class="fas fa-eye-slash" id="icon" aria-hidden="true"></i>
+                                </span>
+                            </div>
+                        </form>
+                        <a class="text-decoration-none link-primary" href="#" data-bs-toggle="modal"
+                            data-bs-target="#loginModal">Already have an account? Log In!</a>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary" form="signup-form">Register</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal"
+                            data-bs-toggle="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="logOutModal" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Logout</h4>
+                        <button type="button" class="btn btn-light" data-dismiss="modal" data-bs-toggle="modal"
+                            aria-label="Close">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="logout-form" method="POST" action="/logout">
+                            <h6>Are you sure?</h6>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary" form="logout-form">Logout</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal"
+                            data-bs-toggle="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow-1 container text-center {% block search_book %}{% endblock %}">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="bg-transparent text-center">
+        <div class="text-center p-3" style="background-color: rgba(0, 0, 0, 0.05);">
+            <span class="text-dark fw-bold">&copy; 2025 Page Portal:</span>
+            <a class="text-light fw-bold" target="_blank" href="https://github.com/ishworTM/pithunda">GitHub</a>
+        </div>
+    </footer>
+    <script src="/static/lib/jquery_3.5.1_slim_min.js"></script>
+    <script src="/static/lib/bootstrap_bundle_min.js"></script>
+    <script src="/static/lib/font_awesome_all_min.js"></script>
+</body>
+
+</html>

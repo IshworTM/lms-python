@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Loans{% endblock %}
+
+{% block content %}
+<h1>{%if role == "admin"%}Total{%else%}Your{%endif%} Loans</h1>
+<table class="table table-hover">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Loan ID</th>
+            <th>Member ID</th>
+            <th>Book ISBN</th>
+            <th>Book Title</th>
+            <th>Loan Date</th>
+            <th>Due Date</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for loan in loans %}
+        <tr class="{%if loan.is_issued == False%}table-light{%endif%}">
+            <td>{{ loop.index }}</td>
+            <td>{{ loan.id }}</td>
+            <td>{{ loan.user_id }}</td>
+            <td>{{ loan.isbn }}</td>
+            <td>{{ loan.book }}</td>
+            <td>{{ loan.loan_date }}</td>
+            <td>{{ loan.due_date }}</td>
+            <td>{%if loan.is_issued == True%}Not Returned{%else%}Returned{%endif%}</td>
+            <td>
+                {%if role == 'admin'%}<a class="btn btn-primary" href="http://youtube.com">Approve</a>{%endif%}
+                {%if loan.is_issued == True%}
+                <a class="btn btn-{%if role == 'admin'%}secondary{%else%}primary{%endif%}"
+                    href="/return?id={{loan.id}}">
+                    Return
+                </a>
+                {%else%}
+                <a class="btn btn-{%if role == 'admin'%}secondary{%else%}primary{%endif%} disabled" href="#">
+                    Return
+                </a>
+                {%endif%}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
