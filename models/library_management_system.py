@@ -34,25 +34,80 @@ class LibraryManagementSystem:
         cur = self.cur
         cur.execute(f"SELECT * FROM {self.table} WHERE member_id=%s", (member_id,))
         return cur.fetchall()
-    
-    def get_all_active_member_loans(self, member_id: int):
+
+    def get_all_active_member_returns(self, member_id: int):
         cur = self.cur
-        cur.execute(f"SELECT * FROM {self.table} WHERE member_id=%s and not is_issued", (member_id,))
+        cur.execute(
+            f"SELECT * FROM {self.table} WHERE member_id=%s and status = 'returned'",
+            (member_id,),
+        )
         return cur.fetchall()
 
-    def issue_book(self, book_id: str, member_id: str):
+    def get_all_returns(self):
+        cur = self.cur
+        cur.execute(f"SELECT * FROM {self.table} WHERE status = 'returned'")
+        return cur.fetchall()
+
+    def get_all_member_returns(self, member_id: int):
+        cur = self.cur
+        cur.execute(
+            f"SELECT * FROM {self.table} WHERE member_id=%s and status = 'returned'",
+            (member_id,),
+        )
+        return cur.fetchall()
+
+    def approve_book_issue(self, loan_id: str):
+        cur = self.cur
+        loan = self.get_loan_by_id(loan_id)
+        if loan and loan[5] == "pending":
+            cur.execute(
+                f"UPDATE {self.table} SET status='approved' WHERE id=%s", (loan_id,)
+            )
+            if cur.rowcount > 0:
+                return True
+            return False
+
+    def validate_multiple_request(self, book_id: str, member_id: str):
+        cur = self.cur
+        cur.execute(
+            f"SELECT * FROM {self.table} WHERE book_id=%s AND member_id=%s AND status='pending'",
+            (book_id, member_id),
+        )
+        return cur.fetchall()
+
+    def validate_existing_borrow(self, book_id: str, member_id: str):
+        cur = self.cur
+        cur.execute(
+            f"SELECT * FROM {self.table} WHERE book_id=%s AND member_id=%s AND status='approved'",
+            (book_id, member_id),
+        )
+        return cur.fetchall()
+
+    def get_all_pending_books(self):
+        cur = self.cur
+        cur.execute(f"SELECT * FROM {self.table} WHERE status = 'pending'")
+
+    def get_member_pending_books(self, member_id: str):
+        cur = self.cur
+        cur.execute(
+            f"SELECT * FROM {self.table} WHERE status = 'pending' AND member_id=%s",
+            (member_id,),
+        )
+        return cur.fetchall()
+
+    def request_book(self, book_id: str, member_id: str):
         cur = self.cur
         issue_date = date.today().strftime("%Y-%m-%d")
         return_date = (date.today() + timedelta(weeks=1)).strftime("%Y-%m-%d")
         try:
             cur.execute(
-                f"INSERT INTO {self.table}(book_id, member_id, issue_date, return_date, is_issued) VALUES(%s,%s,%s,%s,%s)",
+                f"INSERT INTO {self.table}(book_id, member_id, issue_date, return_date, status) VALUES(%s,%s,%s,%s,%s)",
                 (
                     book_id,
                     member_id,
                     issue_date,
                     return_date,
-                    True,
+                    "pending",
                 ),
             )
             if cur.rowcount > 0:
@@ -78,14 +133,14 @@ class LibraryManagementSystem:
                 )
                 return False
             book_id = result[1]
-            is_issued = result[5]
-            if not is_issued:
+            status = result[5]
+            if not status:
                 _logger.error(
                     f"Book with book_id: {book_id} and loan_id: {loan_id} is not currently issued."
                 )
                 return False
             cur.execute(
-                f"UPDATE {self.table} SET return_date=CURRENT_DATE, is_issued=FALSE WHERE id=%s",
+                f"UPDATE {self.table} SET return_date=CURRENT_DATE, status='returned' WHERE id=%s",
                 (loan_id,),
             )
             if not cur.rowcount > 0:

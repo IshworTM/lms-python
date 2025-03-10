@@ -31,14 +31,14 @@
                     </li>
                     {%if member["role"] == "admin"%}
                     <li class="nav-item">
-                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#addBookModal">Add a
-                            Book</a>
+                        <a class="nav-link" href="/members">Members</a>
                     </li>
                     {%endif%}
                     <li class="nav-item">
-                        <!-- <a class="text-decoration-none" href="/loans"> -->
                         <button class="nav-link" type="button" onclick="viewLoans()">Loans</button>
-                        <!-- </a> -->
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" type="button" onclick="viewReturns()">Returns</button>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/about_us">About Us</a>
@@ -56,7 +56,6 @@
                         <div class="dropdown-menu" aria-labelledby="profileDropdown">
                             <span class="dropdown-header">Main</span>
                             <a class="dropdown-item" href="/profile">Profile</a>
-                            <!-- <a class="dropdown-item" href="#">Settings</a> -->
                             <div class="dropdown-divider"></div>
                             <a class="dropdown-item" href="#" data-bs-toggle="modal"
                                 data-bs-target="#logOutModal">Logout</a>
@@ -73,57 +72,18 @@
                 </ul>
             </div>
         </nav>
-        <div class="modal fade" id="addBookModal" tabindex="-1" role="dialog" aria-hidden="true">
-            <div class="modal-dialog" role="document">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h4 class="modal-title">Add New Book</h4>
-                        <button type="button" class="btn btn-light" data-dismiss="modal" data-bs-toggle="modal"
-                            aria-label="Close">&times;</button>
-                    </div>
-                    <div class="modal-body">
-                        <form id="add-book-form" action="/add_book" method="post">
-                            <div class="mb-3">
-                                <input type="text" class="form-control" name="book_name" id="book-name"
-                                    placeholder="Name" required>
-                            </div>
-                            <div class="mb-3">
-                                <input type="text" class="form-control" name="author" id="author" placeholder="Author"
-                                    required>
-                            </div>
-                            <div class="mb-3">
-                                <input type="text" class="form-control" name="isbn" id="isbn" placeholder="ISBN"
-                                    required>
-
-                            </div>
-                            <div class="mb-3">
-                                <input type="number" class="form-control" name="total_copies" id="total-copies"
-                                    placeholder="Total Copies" required>
-                            </div>
-                            <div class="mb-3">
-                                <input type="number" class="form-control" name="available_copies" id="available-copies"
-                                    placeholder="Available Copies" required>
-                            </div>
-                        </form>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="submit" class="btn btn-primary" form="add-book-form">Add</button>
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal"
-                            data-bs-toggle="modal">Close</button>
-                    </div>
-                </div>
-            </div>
-        </div>
         <div class="modal fade" id="loginModal" tabindex="-1" role="dialog" aria-hidden="true">
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h4 class="modal-title">Login To Your Account</h4>
                         <button type="button" class="btn btn-light" data-dismiss="modal" data-bs-toggle="modal"
-                            aria-label="Close">&times;</button>
+                            aria-label="Close">
+                            <i class="fa fa-times"></i>
+                        </button>
                     </div>
                     <div class="modal-body">
-                        <form id="login-form" action="/login" method="post">
+                        <form id="login-form" onsubmit="userLogin(event)" method="POST">
                             <div class="input-group mb-3">
                                 <input type="email" class="form-control" name="email" id="email" placeholder="Email"
                                     required>
@@ -149,14 +109,15 @@
                 </div>
             </div>
         </div>
-
         <div class="modal fade" id="signUpModal" tabindex="-1" role="dialog" aria-hidden="true">
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h4 class="modal-title">Register Account</h4>
                         <button type="button" class="btn btn-light" data-dismiss="modal" data-bs-toggle="modal"
-                            aria-label="Close">&times;</button>
+                            aria-label="Close">
+                            <i class="fa fa-times"></i>
+                        </button>
                     </div>
                     <div class="modal-body">
                         <form id="signup-form" action="/signup" method="post">
@@ -190,14 +151,15 @@
                 </div>
             </div>
         </div>
-
         <div class="modal fade" id="logOutModal" tabindex="-1" role="dialog" aria-hidden="true">
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h4 class="modal-title">Logout</h4>
                         <button type="button" class="btn btn-light" data-dismiss="modal" data-bs-toggle="modal"
-                            aria-label="Close">&times;</button>
+                            aria-label="Close">
+                            <i class="fa fa-times"></i>
+                        </button>
                     </div>
                     <div class="modal-body">
                         <form id="logout-form" method="POST" action="/logout">
@@ -208,6 +170,26 @@
                         <button type="submit" class="btn btn-primary" form="logout-form">Logout</button>
                         <button type="button" class="btn btn-secondary" data-dismiss="modal"
                             data-bs-toggle="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade" id="alertBoxModal" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Page Portal says:</h4>
+                        <button type="button" class="btn btn-light" data-dismiss="modal" data-bs-toggle="modal"
+                            aria-label="Close">
+                            <i class="fa fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <h6 id="lms-alert-text" class="fw-bold"></h6>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" id="alert-btn" data-dismiss="modal"
+                            data-bs-toggle="modal">Okay</button>
                     </div>
                 </div>
             </div>

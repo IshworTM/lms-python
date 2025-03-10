@@ -49,7 +49,7 @@ class BookManagementSystem:
     def update_book(self, book_id: str, vals: dict):
         cur = self.cur
         try:
-            test = cur.execute(
+            cur.execute(
                 f"UPDATE {self.table} SET title=%s, author=%s, isbn=%s, total_copies=%s, available_copies=%s WHERE id=%s",
                 (
                     vals["book_name"],

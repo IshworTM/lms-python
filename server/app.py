@@ -27,7 +27,7 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
         if context is None:
             context = {}
         try:
-            env.globals["member"] = self.is_logged_in()
+            env.globals["member"] = self.get_session()
             template = env.get_template(template_name)
             content = template.render(context)
             self.send_response(200)
@@ -40,18 +40,6 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
             return self.send_error(
                 500, f"An error occurred while serving the template: {e}"
             )
-
-    def is_logged_in(self):
-        session_id = self.get_session_id()
-        if session_id in sessions:
-            return sessions[session_id]
-        return None
-
-    def get_session_id(self):
-        session = cookie.get("session_id", False)
-        if session:
-            return session.value
-        return False
 
     def send_html(self):
         self.send_response(200)
@@ -67,9 +55,11 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(json.dumps(data).encode())
 
-    def send_custom_header(self, code: int, keyword: str, value: str):
+    def send_custom_header(self, code: int, headers: dict[str, str]):
         self.send_response(code)
-        self.send_header(keyword, value)
+        if headers:
+            for keyword, value in headers.items():
+                self.send_header(keyword, value)
         self.end_headers()
 
     def send_to_page(self, path: str = None):
@@ -80,6 +70,8 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
 
     def form_data_to_json(self):
         raw = self.rfile.read(int(self.headers["Content-Length"]))
+        if self.headers.get("Content-Type") == "application/json":
+            return json.loads(raw.decode("UTF-8"))
         parsed_data = parse.parse_qs(raw.decode("utf-8"))
         data = {key: value[0] for key, value in parsed_data.items()}
         return data
@@ -93,6 +85,14 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
             "role": member[4],
         }
         return session_id
+
+    def get_session_id(self):
+        session_id = cookie.get("session_id", False)
+        return session_id.value if session_id else False
+
+    def get_session(self):
+        session_id = self.get_session_id()
+        return sessions.get(session_id, False)
 
     def set_session_cookie(self, session_id):
         cookie["session_id"] = session_id
@@ -119,7 +119,6 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
 
         body = f"Name: {name}\nEmail: {email}\nMessage:\n{msg}"
         data.attach(MIMEText(body, "plain"))
-        # pdb.set_trace()
         try:
             _server = SMTP(server, port)
             _server.starttls()
@@ -129,6 +128,10 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
             return True
         except SMTPException as e:
             _logger.exception("SMTP Error:")
+            self.send_json(
+                {"error": f"Internal Server Error: {e}"},
+                500,
+            )
             return False
 
     def do_POST(self):
@@ -138,32 +141,13 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
             if member:
                 session_id = self.create_session(member)
                 self.set_session_cookie(session_id=session_id)
-                self.send_to_page("/")
+                self.send_json({"success": "Login Successful"}, 200)
             else:
-                content = f"""
-                    <div class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
-                        <div class="modal-dialog" role="document">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h4 class="modal-title">This site says:</h4>
-                                    <button type="button" class="btn btn-light" data-dismiss="modal" data-bs-toggle="modal"
-                                        aria-label="Close">&times;</button>
-                                </div>
-                                <div class="modal-body">
-                                    <h6>Are you sure?</h6>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-dismiss="modal"
-                                        data-bs-toggle="modal">Okay</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                """
-                self.send_custom_header(
-                    200,
-                )
-                self.send_json({"message": "Invalid Credentials"}, 500)
+                fetch_mode = self.headers.get("Sec-Fetch-Mode")
+                if fetch_mode == "cors":
+                    self.send_json({"error": "Invalid Credentials"}, 401)
+                else:
+                    self.send_to_page("/")
 
         elif self.path == "/signup":
             data = self.form_data_to_json()
@@ -176,7 +160,8 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
 
         elif self.path == "/logout":
             session_id = self.get_session_id()
-            if session_id in sessions:
+            session = sessions.get(session_id, False)
+            if session:
                 del sessions[session_id]
                 return self.send_to_page("/")
             else:
@@ -184,9 +169,13 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
 
         elif self.path == "/add_book":
             data = self.form_data_to_json()
-            test = bms.add_book(data)
-            if test:
-                return self.send_to_page("/library")
+            if data:
+                try:
+                    bms.add_book(data)
+                    return self.send_to_page("/library")
+                except Exception:
+                    _logger.exception(f"Error while adding a book:")
+                    self.send_json(f"Error while adding a book: {e}", 500)
 
         elif self.path.startswith("/remove_book"):
             book_id = self.get_id_from_query()
@@ -196,7 +185,10 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
                     return self.send_to_page("/library")
                 except Exception:
                     return _logger.exception(f"An unexpected error occurred:")
-            return _logger.error("That book doesn't exist.")
+            _logger.warning(
+                "Tried to delete book directly from the URL, redirecting to root page..."
+            )
+            return self.send_to_page("/")
 
         elif self.path.startswith("/edit_book"):
             book_id = self.get_id_from_query()
@@ -211,29 +203,70 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
                         {"error": f"Internal Server Error: {e}"},
                         500,
                     )
-            return _logger.error("That book doesn't exist.")
-
-        elif self.path.startswith("/borrow"):
-            book_id = self.get_id_from_query()
-            session_id = self.get_session_id()
-            member_id = sessions[session_id]["member_id"] or False
-            if member_id and book_id:
-                try:
-                    lms.issue_book(book_id, member_id)
-                    updated = bms.update_book_count(book_id, "-")
-                    if updated:
-                        return self.send_to_page("/loans")
-                except ValueError:
-                    return _logger.exception("Invalid value provided:")
-                except Exception as e:
-                    _logger.exception(
-                        f"Cannot loan book at this moment, please try again later:",
-                    )
-                    return self.send_json(
-                        {"error": f"Error while loaning a book: {e}"},
-                        500,
-                    )
+            _logger.warning(
+                "Tried to edit book directly from the URL, redirecting to root page..."
+            )
             return self.send_to_page("/")
+
+        elif self.path.startswith("/request"):
+            book_id = self.get_id_from_query()
+            session = self.get_session()
+            if session:
+                member_id = session["member_id"]
+                if member_id and book_id:
+                    try:
+                        request_multiple = lms.validate_multiple_request(
+                            book_id, member_id
+                        )
+                        if request_multiple:
+                            return self.send_json(
+                                {"error": "You can only request one book at a time"},
+                                400,
+                            )
+                        already_borrowed = lms.validate_existing_borrow(
+                            book_id, member_id
+                        )
+                        if already_borrowed:
+                            return self.send_json(
+                                {"error": "You have already borrowed this book"},
+                                400,
+                            )
+                        lms.request_book(book_id, member_id)
+                        return self.send_to_page("/loans")
+                    except Exception as e:
+                        _logger.exception(
+                            f"Cannot request book at this moment, please try again later:",
+                        )
+                        return self.send_json(
+                            {"error": f"Error while requesting a book borrow: {e}"},
+                            500,
+                        )
+
+        elif self.path.startswith("/approve"):
+            loan_id = self.get_id_from_query()
+            session = self.get_session()
+            if session:
+                role = session["role"]
+                if role == "admin" and loan_id:
+                    try:
+                        loan = lms.get_loan_by_id(loan_id)
+                        if loan and loan[5] == "pending":
+                            lms.approve_book_issue(loan_id)
+                            bms.update_book_count(loan[1], "-")
+                            ums.update_borrow_count("+", loan[2])
+                            return self.send_to_page("/loans")
+                    except ValueError:
+                        _logger.exception("Invalid value provided:")
+                        return self.send_json({"error": "Invalid Value Provided."}, 400)
+                    except Exception as e:
+                        _logger.exception(
+                            f"Cannot approve book at this moment, please try again later:",
+                        )
+                        return self.send_json(
+                            {"error": f"Error while approving a book: {e}"},
+                            500,
+                        )
+            return self.send_json({"error": "Unauthorized"}, 403)
 
         elif self.path.startswith("/search"):
             data = self.form_data_to_json()
@@ -258,19 +291,76 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
                 if sent:
                     self.send_to_page("/thank_you")
                 else:
-                    self.send_error(500, "Error while sending email.")
+                    self.send_json(f"Error while sending email: {e}", 500)
             else:
-                self.send_error(500, "All fields are required.")
+                self.send_json("All fields are required.", 400)
+
+        elif self.path == "/add_member":
+            data = self.form_data_to_json()
+            if data:
+                try:
+                    ums.add_member(data)
+                    self.send_to_page("/members")
+                except Exception:
+                    _logger.exception("Error while adding new member:", stack_info=True)
+                    self.send_json(
+                        f"An error occurred while adding new member: {e}", 500
+                    )
+
+        elif self.path.startswith("/edit_member"):
+            session = self.get_session()
+            role = session.get("role", "")
+            if role == "admin":
+                member_id = self.get_id_from_query()
+                if member_id:
+                    data = self.form_data_to_json()
+                    try:
+                        ums.update_member(member_id, data)
+                        return self.send_to_page("/members")
+                    except Exception:
+                        _logger.exception(
+                            "An error occurred while editing member:", stack_info=True
+                        )
+                        return self.send_json(
+                            f"An error occurred while editing this member: {e}", 500
+                        )
+            _logger.warning(
+                f"Tried to edit member directly from the URL, redirecting to home."
+            )
+            return self.send_to_page("/")
+
+        elif self.path.startswith("/delete_member"):
+            session = self.get_session()
+            role = session.get("role", "")
+            if role == "admin":
+                member_id = self.get_id_from_query()
+                if member_id:
+                    try:
+                        ums.delete_member(member_id)
+                        return self.send_to_page("/members")
+                    except Exception:
+                        _logger.exception(
+                            f"An error occurred while deleting the member with ID: {member_id}"
+                        )
+                        return self.send_json(
+                            f"An error occurred while deleting the member with ID: {member_id}",
+                            500,
+                        )
+                _logger.warning(
+                    f"Attempted to delete member from a forbidden method.",
+                    stack_info=True,
+                )
+            return self.send_to_page("/")
 
     def do_GET(self):
         if self.path.startswith("/static/"):
             file_path = self.path[1:]
-            print(file_path)
+            print(f"Attempting to serve file: {file_path}")
             if os.path.exists(file_path):
                 try:
                     with open(file_path, "rb") as file:
                         mime_type, _ = mime.guess_type(file_path)
-                        self.send_custom_header(200, "Content-Type", mime_type)
+                        self.send_custom_header(200, {"Content-Type": mime_type})
                         self.wfile.write(file.read())
                 except Exception as e:
                     _logger.exception(
@@ -285,20 +375,21 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
         if self.path == "/":
             self.serve_template("index.html")
         elif self.path == "/profile":
-            session_id = self.get_session_id()
-            if session_id:
-                member = sessions[session_id]
-                member_id = member["member_id"]
+            session = self.get_session()
+            if session:
+                member_id = session.get("member_id")
                 total_loans = len(lms.get_all_member_loans(member_id))
-                returned_loans = len(lms.get_all_active_member_loans(member_id))
-                self.serve_template(
+                returned_loans = len(lms.get_all_active_member_returns(member_id))
+                return self.serve_template(
                     "user_profile.html",
                     {
-                        "member": member,
                         "total_loans": total_loans,
                         "total_returned": returned_loans,
                     },
                 )
+            _logger.warning(
+                f"Attempted to access profile directly from URL or without logging in."
+            )
             return self.send_to_page("/")
         elif self.path == "/about_us":
             self.serve_template("about_us.html")
@@ -308,56 +399,116 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
             self.serve_template("thank_you.html")
         elif self.path == "/library":
             books = bms.get_books()
-            user = False
-            session_id = self.get_session_id()
-            if session_id:
-                user = sessions[session_id]
-            self.serve_template(
+            return self.serve_template(
                 "books.html",
                 {
                     "books": books,
                     "datetime": datetime,
                     "timedelta": timedelta,
-                    "user": user,
                 },
             )
+        elif self.path == "/members":
+            members = ums.get_members()
+            session = self.get_session()
+            role = session["role"] if session else None
+            if role == "admin":
+                ctx = []
+                for member in members:
+                    ctx.append(
+                        {
+                            "id": member[0],
+                            "name": member[1],
+                            "email": member[2],
+                            "type": member[4],
+                            "borrowed_books": member[5],
+                        }
+                    )
+                return self.serve_template("users.html", {"members": ctx})
+            return self.send_to_page("/")
         elif self.path == "/loans":
-            session_id = self.get_session_id()
-            if session_id:
-                current_session = sessions[session_id]
-                role = current_session["role"]
+            session = self.get_session()
+            if session:
+                role = session.get("role", "")
                 loans = []
                 member_id = None
-
                 if role != "admin":
-                    member_id = current_session["member_id"]
+                    member_id = session.get("member_id", False)
                     data = lms.get_all_member_loans(member_id)
                 else:
                     data = lms.get_all_loans()
 
                 for loan in data:
-                    book = bms.find_book_by_id(loan[1])
-                    loans.append(
-                        {
-                            "id": loan[0],
-                            "user_id": member_id or loan[2],
-                            "isbn": book[3],
-                            "book": book[1],
-                            "loan_date": loan[3],
-                            "due_date": loan[4],
-                            "is_issued": loan[5],
-                        }
-                    )
+                    if loan[5] != "returned":
+                        book = bms.find_book_by_id(loan[1])
+                        loans.append(
+                            {
+                                "id": loan[0],
+                                "user_id": member_id or loan[2],
+                                "isbn": book[3],
+                                "book": book[1],
+                                "loan_date": loan[3],
+                                "return_date": loan[4],
+                                "status": loan[5],
+                            }
+                        )
                 return self.serve_template("loans.html", {"loans": loans, "role": role})
             else:
-                self.send_json(
-                    {"error": "You must be logged in to perform this action."}, 401
+                fetch_mode = self.headers.get("Sec-Fetch-Mode")
+                if fetch_mode == "cors":
+                    self.send_json(
+                        {"error": "You must be logged in to perform this action."}, 401
+                    )
+                else:
+                    _logger.warning(
+                        "Attempted to access loans directly from URL navigation, redirecting to homepage.",
+                    )
+                    return self.send_to_page("/")
+        elif self.path == "/returns":
+            session = self.get_session()
+            if session:
+                role = session.get("role", "")
+                returns = []
+                member_id = None
+                if role != "admin":
+                    member_id = session.get("member_id", False)
+                    data = lms.get_all_member_returns(member_id)
+                else:
+                    data = lms.get_all_returns()
+
+                for returned_book in data:
+                    if returned_book[5] == "returned":
+                        book = bms.find_book_by_id(returned_book[1])
+                        returns.append(
+                            {
+                                "id": returned_book[0],
+                                "user_id": member_id or returned_book[2],
+                                "isbn": book[3],
+                                "book": book[1],
+                                "loan_date": returned_book[3],
+                                "return_date": returned_book[4],
+                                "status": returned_book[5],
+                            }
+                        )
+                return self.serve_template(
+                    "returns.html",
+                    {"returns": returns},
                 )
+            else:
+                fetch_mode = self.headers.get("Sec-Fetch-Mode")
+                if fetch_mode == "cors":
+                    self.send_json(
+                        {"error": "You must be logged in to perform this action."}, 401
+                    )
+                else:
+                    _logger.warning(
+                        "Attempted to access loans directly from URL navigation, redirecting to homepage.",
+                    )
+                    return self.send_to_page("/")
         elif self.path.startswith("/return"):
             loan_id = self.get_id_from_query()
-            session_id = self.get_session_id()
-            member_id = sessions[session_id]["member_id"] or False
-            role = sessions[session_id]["role"] or False
+            session = self.get_session()
+            member_id = session.get("member_id", False)
+            role = session.get("role", "")
             if member_id and loan_id:
                 try:
                     loan_data = lms.get_loan_by_id(loan_id)
@@ -381,6 +532,7 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
                     if returned:
                         updated = bms.update_book_count(book_id, "+")
                         if updated:
+                            ums.update_borrow_count("-", loan_data[2])
                             _logger.info("Book successfully returned!")
                             return self.send_to_page("/loans")
                         _logger.error(f"Failed to update inventory for book {book_id}")
