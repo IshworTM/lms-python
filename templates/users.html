@@ -1,26 +1,150 @@
 {% extends "base.html" %}
 
-{% block title %}Users{% endblock %}
+{% block title %}Members{% endblock %}
 
 {% block content %}
-<h1>Users</h1>
-<table>
+
+<h1 class="fw-bold text-black">Members</h1>
+<button class="btn btn-primary mb-4 " href="#" data-bs-toggle="modal" data-bs-target="#addMemberModal">
+    Add Member
+</button>
+<div class="modal fade" id="addMemberModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Add New Member</h4>
+                <button type="button" class="btn btn-light" data-dismiss="modal" data-bs-toggle="modal"
+                    aria-label="Close">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="add-member-form" action="/add_member" method="post">
+                    <div class="input-group mb-3">
+                        <span class="input-group-text" id="add-member-username-addon">@</span>
+                        <input type="text" class="form-control" name="username" id="username" placeholder="Username"
+                            required>
+                    </div>
+                    <div class="input-group mb-3">
+                        <input type="email" class="form-control" name="email" id="email" placeholder="Email" required>
+                        <span class="input-group-text" id="add-member-email-addon">@example.com</span>
+                    </div>
+                    <div class="input-group mb-3">
+                        <input type="password" class="form-control" name="password" id="password-field"
+                            placeholder="Password" required>
+                        <span class="input-group-text" role="button" onclick="showPw(event)" id="password-addon">
+                            <i class="fas fa-eye-slash" id="icon" aria-hidden="true"></i>
+                        </span>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary" form="add-member-form">Add</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal"
+                    data-bs-toggle="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<table class="table table-md">
     <thead>
         <tr>
-            <th>User ID</th>
+            <th>Member ID</th>
             <th>Name</th>
             <th>Email</th>
+            <th>Member Type</th>
             <th>Borrowed Books</th>
+            <th>Actions</th>
         </tr>
     </thead>
     <tbody>
-        {% for user_id, user in users.items() %}
+        {% for user in members %}
         <tr>
-            <td>{{ user_id }}</td>
+            <td>{{ user.id }}</td>
             <td>{{ user.name }}</td>
             <td>{{ user.email }}</td>
-            <td>{{ user.borrowed_books|length }}</td>
+            <td>{{ user.type.capitalize() }}</td>
+            <td>{{ user.borrowed_books }}</td>
+            <td>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editMemberModal-{{user.id}}">
+                    Edit
+                </button>
+                <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#confirmMemberDelete-{{user.id}}">
+                    Delete
+                </button>
+            </td>
         </tr>
+        <div class="modal fade" id="editMemberModal-{{ user.id }}" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Editing <em class="fw-bold text-primary">{{user.name}}</em>...</h4>
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal" data-bs-toggle="modal"
+                            aria-label="Close">
+                            <i class="fa fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="edit-member-form-{{ user.id }}" action="/edit_member?id={{ user.id }}" method="POST">
+                            <div class="mb-3">
+                                <input type="text" class="form-control" name="member_name" value="{{user.name}}"
+                                    placeholder="Member Name" required>
+                            </div>
+                            <div class="mb-3">
+                                <input type="email" class="form-control" name="email" value="{{user.email}}"
+                                    placeholder="Member Email" required>
+                            </div>
+                            <div class="mb-3">
+                                <select class="form-select" name="type">
+                                    {%if not user.type%}<option value="" selected>Select Member Type</option>{%endif%}
+                                    <option value="admin" {%if user.type=='admin' %}selected{%endif%}>Admin</option>
+                                    <option value="normal" {%if user.type=='normal' %}selected{%endif%}>Normal</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <input type="number" class="form-control" name="borrowed_books"
+                                    value="{{ user.borrowed_books }}" placeholder="Borrowed Books" required>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary" form="edit-member-form-{{user.id}}">Save
+                            Changes
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-bs-toggle="modal">
+                            Discard
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade" id="confirmMemberDelete-{{ user.id }}" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Delete <em class="fw-bold text-info">{{user.name}}</em>&nbsp;?</h4>
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal" data-bs-toggle="modal"
+                            aria-label="Close">
+                            <i class="fa fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="delete-member-form-{{ user.id }}" method="POST"
+                            action="/delete_member?id={{ user.id }}">
+                            <h5 class="fw-bold">Are you sure?</h5>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-danger" form="delete-member-form-{{ user.id }}">
+                            Delete
+                        </button>
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal" data-bs-toggle="modal">
+                            Go Back
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
         {% endfor %}
     </tbody>
 </table>

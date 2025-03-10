@@ -3,139 +3,191 @@
 {% block title %}Library{% endblock %}
 
 {% block content %}
-<div>
-    <h1>Library</h1>
-    <div class="book-cards d-flex gap-3">
+<div class="container">
+    <h1 class="fw-bold text-black">Library</h1>
+    {%if member.role == "admin"%}
+    <a class="btn btn-primary mb-4 " href="#" data-bs-toggle="modal" data-bs-target="#addBookModal">Add a
+        Book</a>
+    <div class="modal fade" id="addBookModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Add New Book</h4>
+                    <button type="button" class="btn btn-light" data-dismiss="modal" data-bs-toggle="modal"
+                        aria-label="Close">
+                        <i class="fa fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="add-book-form" action="/add_book" method="post">
+                        <div class="mb-3">
+                            <input type="text" class="form-control" name="book_name" id="book-name" placeholder="Name"
+                                required>
+                        </div>
+                        <div class="mb-3">
+                            <input type="text" class="form-control" name="author" id="author" placeholder="Author"
+                                required>
+                        </div>
+                        <div class="mb-3">
+                            <input type="text" class="form-control" name="isbn" id="isbn" placeholder="ISBN" required>
+                        </div>
+                        <div class="mb-3">
+                            <input type="number" class="form-control" name="total_copies" id="total-copies"
+                                placeholder="Total Copies" required>
+                        </div>
+                        <div class="mb-3">
+                            <input type="number" class="form-control" name="available_copies" id="available-copies"
+                                placeholder="Available Copies" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary" form="add-book-form">Add</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal"
+                        data-bs-toggle="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {%endif%}
+    <div class="book-cards row">
         {%for book in books%}
-        <div class="card" style="width:18rem;">
-            <img class="card-img-top" src="static/img/logo.png" alt="">
-            <div class="card-body">
-                <h5 class="fw-bold"> {{book[1]}} </h5>
-                <span class="card-text"><span class="fw-bold">Author:</span> {{book[2]}}</span><br>
-                <span class="card-text"><span class="fw-bold">ISBN:</span> {{book[3]}}</span><br>
-                <span class="card-text"><span class="fw-bold">Total Copies:</span> {{book[4]}}</span><br>
-                <span class="card-text"><span class="fw-bold">Available Copies:</span> {{book[5]}}</span>
-                {% if user['member_id'] %}
-                <span class="d-flex justify-content-center gap-1 mt-2">
-                    <a class="btn btn-primary" href="#" data-bs-toggle="modal"
-                       data-bs-target="#confirmBookBorrow-{{ book[0] }}">Borrow</a>
-                    {% if user['role'] == 'admin' %}
-                    <a class="btn btn-secondary" href="#" data-bs-toggle="modal"
-                       data-bs-target="#editBookModal-{{ book[0] }}">Edit</a>
-                    <a class="btn btn-danger" href="#" data-bs-toggle="modal"
-                       data-bs-target="#confirmBookDelete-{{ book[0] }}">Delete</a>
-                    {% endif %}
-                </span>
-                {% endif %}
-            </div>
-        </div>
-        <div class="modal fade" id="confirmBookBorrow-{{ book[0] }}" tabindex="-1" role="dialog" aria-hidden="true">
-            <div class="modal-dialog" role="document">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h4 class="modal-title">Borrow <em class="fw-bold text-info">{{book[1]}}</em>&nbsp;?</h4>
-                        <button type="button" class="btn btn-light" data-bs-dismiss="modal" data-bs-toggle="modal"
-                                aria-label="Close">&times;
-                        </button>
-                    </div>
-                    <div class="modal-body">
-                        <form id="borrow-book-form-{{ book[0] }}" method="POST" action="/borrow?id={{ book[0] }}">
-                            {%if datetime and book[5] > 0 and book[5] <= book[4]%} {%set return_date=(datetime.now() +
-                            timedelta(weeks=1)).strftime('%Y-%m-%d')%} <h5>Are you sure you want to borrow this
-                            book? This book should be returned in a week from
-                            now.</h5>
-                            <h6 class="text-primary">
-                                Return Date: {{ return_date }}
-                            </h6>
-                            {% else %}
-                            <h5>Sorry, the book isn't available at the moment!</h5>
-                            {% endif %}
-                        </form>
-                    </div>
-                    <div class="modal-footer">
-                        {% if book[5] > 0 and book[5] <= book[4] %}
-                        <button type="submit" class="btn btn-primary"
-                                form="borrow-book-form-{{ book[0] }}">Borrow
-                        </button>
+        <div class="col-md-3 mb-4">
+            <div class="card" style="width:15rem;">
+                <!-- <img class="card-img-top" src="static/img/logo.png" alt=""> -->
+                <div class="card-body">
+                    <h5 class="fw-bold text-primary"> {{book[1]}} </h5>
+                    <span class="card-text"><span class="fw-bold">Author:</span> {{book[2]}}</span><br>
+                    <span class="card-text"><span class="fw-bold">ISBN:</span> {{book[3]}}</span><br>
+                    <span class="card-text"><span class="fw-bold">Total Copies:</span> {{book[4]}}</span><br>
+                    <span class="card-text"><span class="fw-bold">Available Copies:</span> {{book[5]}}</span>
+                    {% if member['member_id'] %}
+                    <span class="d-flex justify-content-center gap-1 mt-2">
+                        <a class="btn btn-primary" href="#" data-bs-toggle="modal"
+                            data-bs-target="#confirmBookBorrow-{{ book[0] }}">Borrow</a>
+                        {% if member['role'] == 'admin' %}
+                        <a class="btn btn-secondary" href="#" data-bs-toggle="modal"
+                            data-bs-target="#editBookModal-{{ book[0] }}">Edit</a>
+                        <a class="btn btn-danger" href="#" data-bs-toggle="modal"
+                            data-bs-target="#confirmBookDelete-{{ book[0] }}">Delete</a>
                         {% endif %}
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
-                                data-bs-toggle="modal">Cancel
-                        </button>
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="modal fade" id="confirmBookBorrow-{{ book[0] }}" tabindex="-1" role="dialog" aria-hidden="true">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h4 class="modal-title">Borrow <em class="fw-bold text-info">{{book[1]}}</em>&nbsp;?</h4>
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal" data-bs-toggle="modal"
+                                aria-label="Close">
+                                <i class="fa fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="borrow-book-form-{{ book[0] }}" method="POST"
+                                onsubmit="requestBook(event, book[0])">
+                                {%if datetime and book[5] > 0 and book[5] <= book[4]%} {%set return_date=(datetime.now()
+                                    + timedelta(weeks=1)).strftime('%Y-%m-%d')%} <h5>Are you sure you want to borrow
+                                    this
+                                    book? This book should be returned in a week from
+                                    now.</h5>
+                                    <h6 class="text-primary">
+                                        Return Date: {{ return_date }}
+                                    </h6>
+                                    {% else %}
+                                    <h5>Sorry, the book isn't available at the moment!</h5>
+                                    {% endif %}
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            {% if book[5] > 0 and book[5] <= book[4] %} <button type="submit" class="btn btn-primary"
+                                form="borrow-book-form-{{ book[0] }}">
+                                Borrow
+                                </button>
+                                {% endif %}
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
+                                    data-bs-toggle="modal">Cancel
+                                </button>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-        <div class="modal fade" id="confirmBookDelete-{{ book[0] }}" tabindex="-1" role="dialog" aria-hidden="true">
-            <div class="modal-dialog" role="document">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h4 class="modal-title">Delete <em class="fw-bold text-info">{{book[1]}}</em>&nbsp;?</h4>
-                        <button type="button" class="btn btn-light" data-bs-dismiss="modal" data-bs-toggle="modal"
-                                aria-label="Close">&times;
-                        </button>
-                    </div>
-                    <div class="modal-body">
-                        <form id="delete-book-form-{{ book[0] }}" method="POST" action="/remove_book?id={{ book[0] }}">
-                            <h6>Are you sure?</h6>
-                        </form>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="submit" class="btn btn-danger"
-                                form="delete-book-form-{{ book[0] }}">Delete
-                        </button>
-                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal" data-bs-toggle="modal">Go
-                            Back
-                        </button>
+            <div class="modal fade" id="confirmBookDelete-{{ book[0] }}" tabindex="-1" role="dialog" aria-hidden="true">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h4 class="modal-title">Delete <em class="fw-bold text-info">{{book[1]}}</em>&nbsp;?</h4>
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal" data-bs-toggle="modal"
+                                aria-label="Close">
+                                <i class="fa fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="delete-book-form-{{ book[0] }}" method="POST"
+                                action="/remove_book?id={{ book[0] }}">
+                                <h6>Are you sure?</h6>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-danger" form="delete-book-form-{{ book[0] }}">Delete
+                            </button>
+                            <button type="button" class="btn btn-primary" data-bs-dismiss="modal"
+                                data-bs-toggle="modal">Go
+                                Back
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-        <div class="modal fade" id="editBookModal-{{ book[0] }}" tabindex="-1" role="dialog" aria-hidden="true">
-            <div class="modal-dialog" role="document">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h4 class="modal-title">Editing <em class="fw-bold text-primary">{{book[1]}}</em>...</h4>
-                        <button type="button" class="btn btn-light" data-bs-dismiss="modal" data-bs-toggle="modal"
-                                aria-label="Close">&times;
-                        </button>
-                    </div>
-                    <div class="modal-body">
-                        <form id="edit-book-form-{{ book[0] }}" action="/edit_book?id={{ book[0] }}" method="POST">
-                            <div class="mb-3">
-                                <input type="text" class="form-control" name="book_name" value="{{ book[1] }}"
-                                       placeholder="Name" required>
-                            </div>
-                            <div class="mb-3">
-                                <input type="text" class="form-control" name="author" value="{{ book[2] }}"
-                                       placeholder="Author" required>
-                            </div>
-                            <div class="mb-3">
-                                <input type="text" class="form-control" name="isbn" value="{{ book[3] }}"
-                                       placeholder="ISBN" required>
-                            </div>
-                            <div class="mb-3">
-                                <input type="number" class="form-control" name="total_copies" value="{{ book[4] }}"
-                                       placeholder="Total Copies" required>
-                            </div>
-                            <div class="mb-3">
-                                <input type="number" class="form-control" name="available_copies" value="{{ book[5] }}"
-                                       placeholder="Available Copies" required>
-                            </div>
-                        </form>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="submit" class="btn btn-primary" form="edit-book-form-{{ book[0] }}">Save
-                            Changes
-                        </button>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
+            <div class="modal fade" id="editBookModal-{{ book[0] }}" tabindex="-1" role="dialog" aria-hidden="true">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h4 class="modal-title">Editing <em class="fw-bold text-primary">{{book[1]}}</em>...</h4>
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal" data-bs-toggle="modal"
+                                aria-label="Close">
+                                <i class="fa fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="edit-book-form-{{ book[0] }}" action="/edit_book?id={{ book[0] }}" method="POST">
+                                <div class="mb-3">
+                                    <input type="text" class="form-control" name="book_name" value="{{ book[1] }}"
+                                        placeholder="Name" required>
+                                </div>
+                                <div class="mb-3">
+                                    <input type="text" class="form-control" name="author" value="{{ book[2] }}"
+                                        placeholder="Author" required>
+                                </div>
+                                <div class="mb-3">
+                                    <input type="text" class="form-control" name="isbn" value="{{ book[3] }}"
+                                        placeholder="ISBN" required>
+                                </div>
+                                <div class="mb-3">
+                                    <input type="number" class="form-control" name="total_copies" value="{{ book[4] }}"
+                                        placeholder="Total Copies" required>
+                                </div>
+                                <div class="mb-3">
+                                    <input type="number" class="form-control" name="available_copies"
+                                        value="{{ book[5] }}" placeholder="Available Copies" required>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-primary" form="edit-book-form-{{ book[0] }}">Save
+                                Changes
+                            </button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
                                 data-bs-toggle="modal">Discard
-                        </button>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
         {%endfor%}
     </div>
-
 </div>
 {% endblock %}

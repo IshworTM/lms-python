@@ -1,40 +1,68 @@
 {% extends "base.html" %}
 
-{% block title %}About Us{% endblock %}
+{% block title %}About Us - Page Portal (LMS){% endblock %}
 
 {% block content %}
-<div class="container my-5 bg-white p-4 rounded shadow">
-    <h1 class="fw-bold">About Us</h1>
-    <p>Welcome to Page Portal (LMS) project - a Library Management System built to simplify the way libraries manage
-        their collections, loans, and user interactions.</p>
+<div class="container my-5 bg-white p-4 rounded shadow-lg">
+    <h1 class="fw-bold text-primary text-center">About Page Portal (LMS)</h1>
+    <p class="lead text-center">Your all-in-one solution for smooth library management.</p>
 
-    <h2>Our Mission</h2>
-    <p>
-        Our mission is to provide a user-friendly and efficient system that helps libraries manage their resources
-        effortlessly. We aim to reduce administrative overhead and empower both librarians and patrons with reliable
-        technology.
+    <hr>
+
+    <h2 class="fw-semibold text-primary">Our Mission</h2>
+    <p class="text-muted">
+        At Page Portal, our mission is to revolutionize library management by providing an efficient and user-friendly
+        system. We strive to eliminate administrative burdens, empowering
+        both librarians and patrons with innovative technology for effortless resource management.
     </p>
 
-    <h2>Key Features</h2>
-    <div class="d-flex flex-column align-items-center">
-        <ul style="list-style-type: none;">
-            <li>User Authentication with Role Management</li>
-            <li>Book Cataloging and Advanced Search</li>
-            <li>Loan Issuance, Tracking, and Return Management</li>
-            <li>Responsive Design for a Seamless Experience on All Devices</li>
-        </ul>
+    <h2 class="fw-semibold text-primary mb-3">Key Features</h2>
+    <div class="row text-muted">
+        <div class="col-md-6">
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item">✅ User Authentication & Role Management</li>
+                <li class="list-group-item">✅ Comprehensive Book Cataloging & Advanced Search</li>
+                <li class="list-group-item">✅ Real-time Loan Issuance, Tracking & Returns</li>
+            </ul>
+        </div>
+        <div class="col-md-6">
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item">✅ Automated Reminders for Due Books</li>
+                <li class="list-group-item">✅ Data Analytics & Reporting for Library Insights</li>
+                <li class="list-group-item">✅ Fully Responsive & Mobile-Friendly Design</li>
+            </ul>
+        </div>
     </div>
 
-    <h2>Our Team</h2>
-    <p>
-        We are a passionate group of developers and library enthusiasts who believe in the power of technology to
-        transform traditional library systems. Our team is dedicated to continuous improvement and innovation.
-    </p>
+    <div class="p-3 mb-3 mt-2">
+        <h2 class="fw-semibold text-primary">Meet Our Team</h2>
+        <p class="text-muted p-3">
+            We are a team of passionate developers and library enthusiasts committed to enhancing the way libraries
+            operate.
+            Our goal is to continuously improve and provide solutions that modernize traditional library systems.
+        </p>
+        <div class="d-flex justify-content-center">
+            <div class="mx-5 text-center">
+                <img src="../static/img/public.png" width="200px" height="200px" class="rounded-circle mb-3"
+                    alt="Team Member">
+                <h5>Ishwor Dulal</h5>
+                <p class="text-muted">Lead Developer</p>
+            </div>
+            <div class="mx-5 text-center">
+                <img src="../static/img/public.png" width="200px" height="200px" class="rounded-circle mb-3"
+                    alt="Team Member">
+                <h5>Prashant Shatashanker</h5>
+                <p class="text-muted">Associate Developer</p>
+            </div>
+        </div>
+    </div>
 
-    <h2>Get in Touch</h2>
-    <p>
-        If you have any questions, feedback, or would like to know more about our project, please don't hesitate to
-        contact us at <a href="mailto:dulalishan3@gmail.com">Mail</a>.
+    <h2 class="fw-semibold text-primary">Get in Touch</h2>
+    <p class="text-muted mb-2 pb-2">
+        Have questions, feedback, or want to collaborate? We'd love to hear from you!
+        Reach out to us via email at
+        <a href="mailto:dulalishan3@gmail.com" class="text-primary fw-bold">dulalishan3@gmail.com</a>
+        or visit our <a href="/contact_us" class="text-primary fw-bold">contact us</a>&nbsp;page.
     </p>
 </div>
 {% endblock %}

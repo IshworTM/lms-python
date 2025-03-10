@@ -3,50 +3,42 @@
 {% block title %}Search Results{% endblock %}
 
 {% block content %}
-<div>
-    <h1>Search Results for <em class="fw-bold text-primary">{{item}}</em>...</h1>
+<div class="container">
+    <h1 class="fw-bolder">Search Results for <span class="fw-bold text-primary">{{item}}</span></h1>
     {% if results %}
-    <table class="table table-hover">
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>Title</th>
-                <th>Author</th>
-                <th>ISBN</th>
-                <th>Total Copies</th>
-                <th>Available Copies</th>
-                {% if member %}<th>Actions</th>{%endif%}
-            </tr>
-        </thead>
-        <tbody>
-            {% for book in results %}
-            <tr>
-                <td>{{ loop.index }}</td>
-                <td>{{ book[1] }}</td>
-                <td>{{ book[2] }}</td>
-                <td>{{ book[3] }}</td>
-                <td>{{ book[4] }}</td>
-                <td>{{ book[5] }}</td>
-                {% if member %}
-                <td>
-                    <a class="btn btn-primary" href="#" data-bs-toggle="modal"
-                        data-bs-target="#confirmBookBorrow-{{ book[0] }}">Borrow</a>
-                    {% if member['role'] == 'admin' %}
-                    <a class="btn btn-secondary" href="#" data-bs-toggle="modal"
-                        data-bs-target="#editBookModal-{{ book[0] }}">Edit</a>
-                    <a class="btn btn-danger" href="#" data-bs-toggle="modal"
-                        data-bs-target="#confirmBookDelete-{{ book[0] }}">Delete</a>
+    <div class="book-cards row">
+        {%for book in results%}
+        <div class="col-md-3 mb-4">
+            <div class="card" style="width:15rem;">
+                <!-- <img class="card-img-top" src="static/img/logo.png" alt=""> -->
+                <div class="card-body">
+                    <h5 class="fw-bold text-primary"> {{book[1]}} </h5>
+                    <span class="card-text"><span class="fw-bold">Author:</span> {{book[2]}}</span><br>
+                    <span class="card-text"><span class="fw-bold">ISBN:</span> {{book[3]}}</span><br>
+                    <span class="card-text"><span class="fw-bold">Total Copies:</span> {{book[4]}}</span><br>
+                    <span class="card-text"><span class="fw-bold">Available Copies:</span> {{book[5]}}</span>
+                    {% if member['member_id'] %}
+                    <span class="d-flex justify-content-center gap-1 mt-2">
+                        <a class="btn btn-primary" href="#" data-bs-toggle="modal"
+                            data-bs-target="#confirmBookBorrow-{{ book[0] }}">Borrow</a>
+                        {% if member['role'] == 'admin' %}
+                        <a class="btn btn-secondary" href="#" data-bs-toggle="modal"
+                            data-bs-target="#editBookModal-{{ book[0] }}">Edit</a>
+                        <a class="btn btn-danger" href="#" data-bs-toggle="modal"
+                            data-bs-target="#confirmBookDelete-{{ book[0] }}">Delete</a>
+                        {% endif %}
+                    </span>
                     {% endif %}
-                </td>
-                {% endif %}
-            </tr>
+                </div>
+            </div>
             <div class="modal fade" id="confirmBookBorrow-{{ book[0] }}" tabindex="-1" role="dialog" aria-hidden="true">
                 <div class="modal-dialog" role="document">
                     <div class="modal-content">
                         <div class="modal-header">
                             <h4 class="modal-title">Borrow <em class="fw-bold text-info">{{book[1]}}</em>&nbsp;?</h4>
                             <button type="button" class="btn btn-light" data-bs-dismiss="modal" data-bs-toggle="modal"
-                                aria-label="Close">&times;
+                                aria-label="Close">
+                                <i class="fa fa-times"></i>
                             </button>
                         </div>
                         <div class="modal-body">
@@ -82,7 +74,8 @@
                         <div class="modal-header">
                             <h4 class="modal-title">Delete <em class="fw-bold text-info">{{book[1]}}</em>&nbsp;?</h4>
                             <button type="button" class="btn btn-light" data-bs-dismiss="modal" data-bs-toggle="modal"
-                                aria-label="Close">&times;
+                                aria-label="Close">
+                                <i class="fa fa-times"></i>
                             </button>
                         </div>
                         <div class="modal-body">
@@ -108,7 +101,8 @@
                         <div class="modal-header">
                             <h4 class="modal-title">Editing <em class="fw-bold text-primary">{{book[1]}}</em>...</h4>
                             <button type="button" class="btn btn-light" data-bs-dismiss="modal" data-bs-toggle="modal"
-                                aria-label="Close">&times;
+                                aria-label="Close">
+                                <i class="fa fa-times"></i>
                             </button>
                         </div>
                         <div class="modal-body">
@@ -146,11 +140,11 @@
                     </div>
                 </div>
             </div>
-            {% endfor %}
-        </tbody>
-    </table>
+        </div>
+        {%endfor%}
+    </div>
     {% else %}
-    <p>No results found.</p>
+    <h4 class="fw-bolder">No results found.</h4>
     {% endif %}
 </div>
 {% endblock %}

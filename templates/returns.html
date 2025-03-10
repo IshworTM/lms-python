@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Returns{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="fw-bold text-black">{%if member['role'] == "admin"%}Total{%else%}Your{%endif%} Returns</h1>
+    {%if returns%}
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Loan ID</th>
+                <th>Member ID</th>
+                <th>Book ISBN</th>
+                <th>Book Title</th>
+                <th>Return Date</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for return_book in returns %}
+            {% if return_book.status == 'returned' %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ return_book.id }}</td>
+                <td>{{ return_book.user_id }}</td>
+                <td>{{ return_book.isbn }}</td>
+                <td>{{ return_book.book }}</td>
+                <td>{{ return_book.return_date }}</td>
+                <td>Returned</td>
+            </tr>
+            {%endif%}
+            {% endfor %}
+        </tbody>
+    </table>
+    {%else%}
+    <p class="fw-bold text-primary">You have no returns!</p>
+    {%endif%}
+</div>
+
+{% endblock %}
