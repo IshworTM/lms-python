@@ -46,38 +46,58 @@ function showPw(e) {
     }
 }
 
-function userLogin(event) {
+async function userLogin(event) {
+    const jsonData = formDataToJson(event);
+    fetchData("/login", jsonData, "/", "loginModal");
+}
+
+async function requestBook(event, bookId) {
     event.preventDefault();
-    const formData = new FormData(event.target);
+    const path = `/request?id=${bookId}`;
+    const modal = `confirmBookBorrow-${bookId}`;
+    fetchData(path, null, "/loans", modal);
+}
+
+async function addBook(event) {
+    const jsonData = formDataToJson(event);
+    fetchData("/add_book", jsonData, "/library", "addBookModal");
+}
+
+function formDataToJson(e) {
+    e.preventDefault();
+    const formData = new FormData(e.target);
     const jsonData = JSON.stringify(
         Object.fromEntries(
             formData.entries()
         )
     );
-    fetchData("/login", jsonData);
+    return jsonData;
 }
 
-function requestBook(event) {
-    event.preventDefault();
-    const currentTarget = event.target;
-    const formData = new FormData(currentTarget);
-    const jsonData = JSON.stringify(
-        Object.fromEntries(
-            formData.entries()
-        )
-    );
-    debugger;
-    fetchData("/request", jsonData);
+function closeModalAndShowCustomAlert(type, message, redirect, modalToClose) {
+    if (modalToClose) {
+        $(`#${modalToClose}`).modal("hide").one("hidden.bs.modal", () => {
+            showCustomAlert(type, message, redirect);
+        });
+    }
 }
 
-function fetchData(path, jsonData) {
-    fetch(path, {
+async function fetchData(path, jsonData = null, redirect = null, modalToClose = null, itemToDisable = null) {
+    var options = {
         method: "POST",
-        headers: {
+    };
+    if (jsonData !== null) {
+        options.headers = {
             "Content-Type": "application/json"
-        },
-        body: jsonData
-    }).then(res => {
+        };
+        options.body = jsonData;
+    }
+    let itemText;
+    if (itemToDisable) {
+        itemText = $(itemToDisable).text();
+        $(itemToDisable).addClass("disabled").html("<i class='fa fa-spinner fa-spin'></i> Sending...");
+    }
+    await fetch(path, options).then(res => {
         if (!res.ok) {
             return res.json().then(errorRes => {
                 throw new Error(errorRes.error);
@@ -86,19 +106,55 @@ function fetchData(path, jsonData) {
         return res.json();
     }).then(data => {
         if (data.success) {
-            $("#loginModal").modal("hide");
-            $("#alertBoxModal").modal("show");
-            const alertText = $("#lms-alert-text")
-            alertText.addClass("text-success");
-            alertText.text(`Success: ${data.success}`);
-            $("#alert-btn").text("Okay").click(() => window.location.href = "/");
+            console.log(`Data: ${data}`);
+            if (modalToClose) {
+                closeModalAndShowCustomAlert("success", data.success, redirect, modalToClose);
+            } else {
+                showCustomAlert("success", data.success, redirect);
+            }
         }
     }).catch(err => {
-        $("#loginModal").modal("hide");
-        $("#alertBoxModal").modal("show");
-        const alertText = $("#lms-alert-text")
-        alertText.addClass("text-danger");
-        alertText.text(`Error: ${err.message}`);
-        $("#alert-btn").text("Okay");
+        if (modalToClose) {
+            closeModalAndShowCustomAlert("error", err.message, redirect, modalToClose);
+        } else {
+            showCustomAlert("error", err.message);
+        }
+    }).finally(() => {
+        if (itemToDisable) {
+            $(itemToDisable).removeClass("disabled").html(itemText);
+        }
     });
+}
+
+function showCustomAlert(type, message, redirect = null) {
+    $("#alertBoxModal").modal("show");
+    const alertText = $("#lms-alert-text");
+    alertText.removeClass("text-danger text-success");
+    if (type == "success") {
+        alertText.addClass("text-success");
+        alertText.text(`Success: ${message}`);
+        $("#alertBoxModal").modal("hide").one("hidden.bs.modal", () => {
+            // window.location.href = redirect ? redirect : "/";
+            if (redirect) {
+                window.location.href = redirect;
+            }
+        });
+    } else {
+        alertText.addClass("text-danger");
+        alertText.text(`Error: ${message}`);
+        $("#alert-btn").text("Okay");
+    }
+    // if (type === "success") {
+    //     $("#alert-btn").text("Okay").off("click").click(() => {
+    //         $("#alertBoxModal").modal("hide");
+    //         if (redirect) window.location.href = redirect;
+    //     });
+    // } else {
+    //     $("#alert-btn").text("Okay");
+    // }
+}
+
+async function sendMessage(event) {
+    const jsonData = formDataToJson(event);
+    fetchData("/send_message", jsonData, "/thank_you", null, event.submitter);
 }

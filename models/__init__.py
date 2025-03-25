@@ -1,3 +1,3 @@
-from .library_management_system import LmsDAO
-from .user_management_system import UserDAO
-from .book_management_system import BookDAO
+from .lms import LmsDAO
+from .ums import UserDAO
+from .bms import BookDAO
