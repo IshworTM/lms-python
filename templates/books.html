@@ -63,8 +63,10 @@
                     <span class="card-text"><span class="fw-bold">Available Copies:</span> {{book[5]}}</span>
                     {% if member['member_id'] %}
                     <span class="d-flex justify-content-center gap-1 mt-2">
+                        {%if member['role'] == 'normal'%}
                         <a class="btn btn-primary" href="#" data-bs-toggle="modal"
                             data-bs-target="#confirmBookBorrow-{{ book[0] }}">Borrow</a>
+                        {%endif%}
                         {% if member['role'] == 'admin' %}
                         <a class="btn btn-secondary" href="#" data-bs-toggle="modal"
                             data-bs-target="#editBookModal-{{ book[0] }}">Edit</a>
