@@ -13,6 +13,14 @@ old_books.html
 test.html
 login.html
 test.json
+tsconfig.json
+script.tsconfig
+test.js
+LmsBook.py
+LmsBookIssue.py
+LmsMember.py
+test.py
+test.txt
 
 # Libraries
 */lib/*

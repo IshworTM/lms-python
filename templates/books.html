@@ -19,7 +19,7 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <form id="add-book-form" action="/add_book" method="post">
+                    <form id="add-book-form" onsubmit="addBook(event)" method="post">
                         <div class="mb-3">
                             <input type="text" class="form-control" name="book_name" id="book-name" placeholder="Name"
                                 required>
@@ -87,7 +87,7 @@
                         </div>
                         <div class="modal-body">
                             <form id="borrow-book-form-{{ book[0] }}" method="POST"
-                                onsubmit="requestBook(event, book[0])">
+                                onsubmit="requestBook(event, '{{ book[0] }}')">
                                 {%if datetime and book[5] > 0 and book[5] <= book[4]%} {%set return_date=(datetime.now()
                                     + timedelta(weeks=1)).strftime('%Y-%m-%d')%} <h5>Are you sure you want to borrow
                                     this

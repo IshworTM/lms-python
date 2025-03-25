@@ -1,5 +1,6 @@
 import logging
-from smtplib import SMTP, SMTPException
+from smtplib import SMTP, SMTPConnectError, SMTPAuthenticationError, SMTPException
+from socket import gaierror
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import http.server as httpserver
@@ -106,7 +107,7 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
         vals = self.parse_path_query()
         return vals.get("id", [None])[0]
 
-    def send_email(self, name, email, msg):
+    def send_email(self, name: str, email: str, msg: str) -> tuple[bool, str]:
         server = "smtp.gmail.com"
         port = 587
         server_mail = os.getenv("EMAIL_NAME")
@@ -125,14 +126,15 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
             _server.login(server_mail, server_password)
             _server.send_message(data)
             _server.quit()
-            return True
-        except SMTPException as e:
-            _logger.exception("SMTP Error:")
-            self.send_json(
-                {"error": f"Internal Server Error: {e}"},
-                500,
-            )
-            return False
+            return True, "Message sent successfully!"
+        except gaierror as e:
+            _logger.exception(f"Socket Exception: {e}")
+            error_msg = "Cannot send email, please check your internet connection and try again."
+        except Exception as e:
+            _logger.exception(f"Unknown Exception: {e}")
+            error_msg = "An unexpected error occurred, try again later."
+
+        return False, error_msg
 
     def do_POST(self):
         if self.path == "/login":
@@ -171,9 +173,18 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
             data = self.form_data_to_json()
             if data:
                 try:
-                    bms.add_book(data)
-                    return self.send_to_page("/library")
-                except Exception:
+                    new_book = bms.add_book(data)
+                    if new_book:
+                        return self.send_json(
+                            {"success": "Book Added Successfully!"},
+                            200,
+                        )
+                    return self.send_json(
+                        {
+                            "error": "Cannot add a book at this moment, please try again later!"
+                        }
+                    )
+                except Exception as e:
                     _logger.exception(f"Error while adding a book:")
                     self.send_json(f"Error while adding a book: {e}", 500)
 
@@ -189,7 +200,6 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
                 "Tried to delete book directly from the URL, redirecting to root page..."
             )
             return self.send_to_page("/")
-
         elif self.path.startswith("/edit_book"):
             book_id = self.get_id_from_query()
             if book_id:
@@ -207,8 +217,8 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
                 "Tried to edit book directly from the URL, redirecting to root page..."
             )
             return self.send_to_page("/")
-
         elif self.path.startswith("/request"):
+            _logger.info("Requesting a book")
             book_id = self.get_id_from_query()
             session = self.get_session()
             if session:
@@ -220,7 +230,10 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
                         )
                         if request_multiple:
                             return self.send_json(
-                                {"error": "You can only request one book at a time"},
+                                {
+                                    "error": "You have already requested this book.\
+                                    Please wait till an admin approves your request."
+                                },
                                 400,
                             )
                         already_borrowed = lms.validate_existing_borrow(
@@ -228,11 +241,16 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
                         )
                         if already_borrowed:
                             return self.send_json(
-                                {"error": "You have already borrowed this book"},
+                                {"error": "You have already borrowed this book."},
                                 400,
                             )
                         lms.request_book(book_id, member_id)
-                        return self.send_to_page("/loans")
+                        return self.send_json(
+                            {
+                                "success": "Thank you, your request has been successfully submitted!"
+                            },
+                            200,
+                        )
                     except Exception as e:
                         _logger.exception(
                             f"Cannot request book at this moment, please try again later:",
@@ -241,7 +259,6 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
                             {"error": f"Error while requesting a book borrow: {e}"},
                             500,
                         )
-
         elif self.path.startswith("/approve"):
             loan_id = self.get_id_from_query()
             session = self.get_session()
@@ -250,7 +267,7 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
                 if role == "admin" and loan_id:
                     try:
                         loan = lms.get_loan_by_id(loan_id)
-                        if loan and loan[5] == "pending":
+                        if loan and loan[7] == "pending":
                             lms.approve_book_issue(loan_id)
                             bms.update_book_count(loan[1], "-")
                             ums.update_borrow_count("+", loan[2])
@@ -267,7 +284,6 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
                             500,
                         )
             return self.send_json({"error": "Unauthorized"}, 403)
-
         elif self.path.startswith("/search"):
             data = self.form_data_to_json()
             book_name = data.get("bookName", "").lower()
@@ -287,13 +303,20 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
             email = data.get("contactEmail", "")
             message = data.get("contactMessage", "")
             if name and email and message:
-                sent = self.send_email(name, email, message)
-                if sent:
-                    self.send_to_page("/thank_you")
-                else:
-                    self.send_json(f"Error while sending email: {e}", 500)
+                try:
+                    sent, res = self.send_email(name, email, message)
+                    if sent:
+                        return self.send_json({"success": res}, 200)
+                    else:
+                        return self.send_json({"error": res}, 500)
+                except Exception as e:
+                    _logger.exception(f"Error while sending email: {e}")
+                    self.send_json(
+                        {"error": "Unexpected Error, try again later."},
+                        500,
+                    )
             else:
-                self.send_json("All fields are required.", 400)
+                self.send_json({"error": "All fields are required."}, 400)
 
         elif self.path == "/add_member":
             data = self.form_data_to_json()
@@ -306,7 +329,6 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
                     self.send_json(
                         f"An error occurred while adding new member: {e}", 500
                     )
-
         elif self.path.startswith("/edit_member"):
             session = self.get_session()
             role = session.get("role", "")
@@ -328,7 +350,6 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
                 f"Tried to edit member directly from the URL, redirecting to home."
             )
             return self.send_to_page("/")
-
         elif self.path.startswith("/delete_member"):
             session = self.get_session()
             role = session.get("role", "")
@@ -423,7 +444,7 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
                             "borrowed_books": member[5],
                         }
                     )
-                return self.serve_template("users.html", {"members": ctx})
+                return self.serve_template("members.html", {"members": ctx})
             return self.send_to_page("/")
         elif self.path == "/loans":
             session = self.get_session()
@@ -438,7 +459,7 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
                     data = lms.get_all_loans()
 
                 for loan in data:
-                    if loan[5] != "returned":
+                    if loan[7] != "returned":
                         book = bms.find_book_by_id(loan[1])
                         loans.append(
                             {
@@ -447,8 +468,8 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
                                 "isbn": book[3],
                                 "book": book[1],
                                 "loan_date": loan[3],
-                                "return_date": loan[4],
-                                "status": loan[5],
+                                "due_date": loan[4],
+                                "status": loan[7],
                             }
                         )
                 return self.serve_template("loans.html", {"loans": loans, "role": role})
@@ -485,8 +506,8 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
                                 "isbn": book[3],
                                 "book": book[1],
                                 "loan_date": returned_book[3],
-                                "return_date": returned_book[4],
-                                "status": returned_book[5],
+                                "return_date": returned_book[5],
+                                "status": returned_book[7],
                             }
                         )
                 return self.serve_template(

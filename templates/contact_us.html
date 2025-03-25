@@ -27,7 +27,7 @@
         </div>
         <div class="col-md-6">
             <h3>Send Us a Message</h3>
-            <form action="/send_message" method="POST">
+            <form method="POST" onsubmit="sendMessage(event)">
                 <div class="mb-3">
                     <label for="contactName" class="form-label">Your Name</label>
                     <input type="text" class="form-control" id="contactName" name="contactName"

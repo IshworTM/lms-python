@@ -5,6 +5,8 @@ import pdb
 
 _logger = logging.getLogger(__name__)
 
+FINE_PER_DAY = 5
+
 
 class LibraryManagementSystem:
     def __init__(self):
@@ -98,15 +100,15 @@ class LibraryManagementSystem:
     def request_book(self, book_id: str, member_id: str):
         cur = self.cur
         issue_date = date.today().strftime("%Y-%m-%d")
-        return_date = (date.today() + timedelta(weeks=1)).strftime("%Y-%m-%d")
+        due_date = (date.today() + timedelta(weeks=1)).strftime("%Y-%m-%d")
         try:
             cur.execute(
-                f"INSERT INTO {self.table}(book_id, member_id, issue_date, return_date, status) VALUES(%s,%s,%s,%s,%s)",
+                f"INSERT INTO {self.table}(book_id, member_id, issue_date, due_date, status) VALUES(%s,%s,%s,%s,%s)",
                 (
                     book_id,
                     member_id,
                     issue_date,
-                    return_date,
+                    due_date,
                     "pending",
                 ),
             )
@@ -123,6 +125,7 @@ class LibraryManagementSystem:
         cur = self.cur
         try:
             result = False
+            fine = 0
             if member_id:
                 result = self.get_member_loan(loan_id, member_id)
             else:
@@ -133,15 +136,18 @@ class LibraryManagementSystem:
                 )
                 return False
             book_id = result[1]
-            status = result[5]
-            if not status:
+            status = result[7]
+            if not book_id or status != "approved":
                 _logger.error(
                     f"Book with book_id: {book_id} and loan_id: {loan_id} is not currently issued."
                 )
                 return False
+            if result[5] > result[4]:
+                overdue_days = (result[5] - result[4]).days
+                fine = FINE_PER_DAY * overdue_days
             cur.execute(
-                f"UPDATE {self.table} SET return_date=CURRENT_DATE, status='returned' WHERE id=%s",
-                (loan_id,),
+                f"UPDATE {self.table} SET return_date=CURRENT_DATE, status='returned', fine=%s WHERE id=%s",
+                (loan_id, fine),
             )
             if not cur.rowcount > 0:
                 _logger.error(f"Failed to update loan record with id: {loan_id}")
