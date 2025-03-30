@@ -271,6 +271,7 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
                             lms.approve_book_issue(loan_id)
                             bms.update_book_count(loan[1], "-")
                             ums.update_borrow_count("+", loan[2])
+                            # return self.send_json({"success":"Successfully Approved!"})
                             return self.send_to_page("/loans")
                     except ValueError:
                         _logger.exception("Invalid value provided:")
@@ -497,7 +498,7 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
                     data = lms.get_all_returns()
 
                 for returned_book in data:
-                    if returned_book[5] == "returned":
+                    if returned_book[7] == "returned":
                         book = bms.find_book_by_id(returned_book[1])
                         returns.append(
                             {
