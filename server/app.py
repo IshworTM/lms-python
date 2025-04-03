@@ -200,6 +200,7 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
                 "Tried to delete book directly from the URL, redirecting to root page..."
             )
             return self.send_to_page("/")
+
         elif self.path.startswith("/edit_book"):
             book_id = self.get_id_from_query()
             if book_id:
@@ -217,6 +218,7 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
                 "Tried to edit book directly from the URL, redirecting to root page..."
             )
             return self.send_to_page("/")
+
         elif self.path.startswith("/request"):
             _logger.info("Requesting a book")
             book_id = self.get_id_from_query()
@@ -259,6 +261,7 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
                             {"error": f"Error while requesting a book borrow: {e}"},
                             500,
                         )
+
         elif self.path.startswith("/approve"):
             loan_id = self.get_id_from_query()
             session = self.get_session()
@@ -285,6 +288,7 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
                             500,
                         )
             return self.send_json({"error": "Unauthorized"}, 403)
+
         elif self.path.startswith("/search"):
             data = self.form_data_to_json()
             book_name = data.get("bookName", "").lower()
@@ -298,6 +302,7 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
                     "timedelta": timedelta,
                 },
             )
+
         elif self.path == "/send_message":
             data = self.form_data_to_json()
             name = data.get("contactName", "")
@@ -330,6 +335,7 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
                     self.send_json(
                         f"An error occurred while adding new member: {e}", 500
                     )
+
         elif self.path.startswith("/edit_member"):
             session = self.get_session()
             role = session.get("role", "")
@@ -351,6 +357,7 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
                 f"Tried to edit member directly from the URL, redirecting to home."
             )
             return self.send_to_page("/")
+
         elif self.path.startswith("/delete_member"):
             session = self.get_session()
             role = session.get("role", "")
@@ -394,8 +401,10 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
                     )
             else:
                 return _logger.error(f"File not found: {file_path}")
+
         if self.path == "/":
             self.serve_template("index.html")
+
         elif self.path == "/profile":
             session = self.get_session()
             if session:
@@ -413,12 +422,16 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
                 f"Attempted to access profile directly from URL or without logging in."
             )
             return self.send_to_page("/")
+
         elif self.path == "/about_us":
             self.serve_template("about_us.html")
+
         elif self.path == "/contact_us":
             self.serve_template("contact_us.html")
+
         elif self.path == "/thank_you":
             self.serve_template("thank_you.html")
+
         elif self.path == "/library":
             books = bms.get_books()
             return self.serve_template(
@@ -429,6 +442,7 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
                     "timedelta": timedelta,
                 },
             )
+
         elif self.path == "/members":
             members = ums.get_members()
             session = self.get_session()
@@ -447,6 +461,7 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
                     )
                 return self.serve_template("members.html", {"members": ctx})
             return self.send_to_page("/")
+
         elif self.path == "/loans":
             session = self.get_session()
             if session:
@@ -485,6 +500,7 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
                         "Attempted to access loans directly from URL navigation, redirecting to homepage.",
                     )
                     return self.send_to_page("/")
+
         elif self.path == "/returns":
             session = self.get_session()
             if session:
@@ -526,6 +542,7 @@ class LMSHandler(httpserver.SimpleHTTPRequestHandler):
                         "Attempted to access loans directly from URL navigation, redirecting to homepage.",
                     )
                     return self.send_to_page("/")
+
         elif self.path.startswith("/return"):
             loan_id = self.get_id_from_query()
             session = self.get_session()
