@@ -61,7 +61,7 @@ class LibraryManagementSystem:
     def approve_book_issue(self, loan_id: str):
         cur = self.cur
         loan = self.get_loan_by_id(loan_id)
-        if loan and loan[5] == "pending":
+        if loan and loan[7] == "pending":
             cur.execute(
                 f"UPDATE {self.table} SET status='approved' WHERE id=%s", (loan_id,)
             )
@@ -125,7 +125,7 @@ class LibraryManagementSystem:
         cur = self.cur
         try:
             result = False
-            fine = 0
+            # fine = 0
             if member_id:
                 result = self.get_member_loan(loan_id, member_id)
             else:
@@ -142,12 +142,12 @@ class LibraryManagementSystem:
                     f"Book with book_id: {book_id} and loan_id: {loan_id} is not currently issued."
                 )
                 return False
-            if result[5] > result[4]:
-                overdue_days = (result[5] - result[4]).days
-                fine = FINE_PER_DAY * overdue_days
+            # if result[5] > result[4]:
+            #     overdue_days = (result[5] - result[4]).days
+            #     fine = FINE_PER_DAY * overdue_days
             cur.execute(
-                f"UPDATE {self.table} SET return_date=CURRENT_DATE, status='returned', fine=%s WHERE id=%s",
-                (loan_id, fine),
+                f"UPDATE {self.table} SET return_date=CURRENT_DATE, status='returned' WHERE id=%s",
+                (loan_id,),
             )
             if not cur.rowcount > 0:
                 _logger.error(f"Failed to update loan record with id: {loan_id}")

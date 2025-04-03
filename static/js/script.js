@@ -12,7 +12,7 @@ function viewLoans() {
         const alertText = $("#lms-alert-text")
         alertText.addClass("text-danger");
         alertText.text(`Sorry, ${error.message}`);
-        $("#alert-btn").text("Log In").click(() => $("#loginModal").modal("show"));
+        $("#alert-btn").text("Okay").click(() => $("#loginModal").modal("show"));
     });
 }
 
@@ -29,7 +29,7 @@ function viewReturns() {
         const alertText = $("#lms-alert-text")
         alertText.addClass("text-danger");
         alertText.text(`Sorry, ${error.message}`);
-        $("#alert-btn").text("Log In").click(() => $("#loginModal").modal("show"));
+        $("#alert-btn").text("Okay").click(() => $("#loginModal").modal("show"));
     });
 }
 
